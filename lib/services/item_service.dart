@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/item.dart';
 
 class ItemService {
@@ -8,43 +7,42 @@ class ItemService {
 
   ItemService._();
 
-  List<Item> _items = [];
+  static const String _boxName = 'itemsBox';
+  late Box<Item> _box;
 
-  List<Item> get items => List.unmodifiable(_items);
-
-  Future<void> loadItems() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final itemsJson = prefs.getStringList('billing_items') ?? [];
-      _items =
-          itemsJson.map((json) => Item.fromJson(jsonDecode(json))).toList();
-    } catch (e) {
-      _items = [];
-    }
+  Future<void> init() async {
+    _box = await Hive.openBox<Item>(_boxName);
   }
 
-  Future<void> saveItems() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final itemsJson =
-          _items.map((item) => jsonEncode(item.toJson())).toList();
-      await prefs.setStringList('billing_items', itemsJson);
-    } catch (e) {
-      throw Exception('Failed to save items: $e');
-    }
-  }
+  List<Item> get items => _box.values.toList();
 
   Future<void> addItem(Item item) async {
-    _items.add(item);
-    await saveItems();
+    await _box.put(item.id, item);
   }
 
   Future<void> deleteItem(String itemId) async {
-    _items.removeWhere((item) => item.id == itemId);
-    await saveItems();
+    await _box.delete(itemId);
   }
 
-  double getTotalAmount() {
-    return _items.fold(0.0, (sum, item) => sum + item.price);
+  Item getItemByBarcode(String barcode) {
+    try {
+      return _box.values.firstWhere(
+        (item) => item.barcode == barcode,
+      );
+    } catch (e) {
+      throw StateError('No item found with barcode: $barcode');
+    }
+  }
+
+  bool hasItemWithBarcode(String barcode) {
+    return _box.values.any((item) => item.barcode == barcode);
+  }
+
+  Future<void> clearAllItems() async {
+    await _box.clear();
+  }
+
+  void close() {
+    _box.close();
   }
 }

@@ -55,16 +55,16 @@ class HomePage extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/item-entry');
+                          Navigator.pushNamed(context, '/catalog-management');
                         },
-                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                        icon: const Icon(Icons.inventory_2, size: 20),
                         label: const Text(
-                          'Open Item Entry Page',
+                          'Catalog Management',
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[600],
+                          backgroundColor: Colors.orange[600],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(

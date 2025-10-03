@@ -114,7 +114,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: .7),
                       Colors.transparent,
                     ],
                   ),
@@ -134,7 +134,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),
@@ -154,7 +154,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),
@@ -174,7 +174,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),

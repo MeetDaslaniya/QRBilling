@@ -1,15 +1,29 @@
-class Item {
+import 'package:hive/hive.dart';
+
+part 'item.g.dart';
+
+@HiveType(typeId: 0)
+class Item extends HiveObject {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String name;
+
+  @HiveField(2)
   final double price;
-  final String? barcode;
+
+  @HiveField(3)
+  final String barcode;
+
+  @HiveField(4)
   final DateTime createdAt;
 
   Item({
     required this.id,
     required this.name,
     required this.price,
-    this.barcode,
+    required this.barcode,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -21,16 +35,6 @@ class Item {
       'barcode': barcode,
       'createdAt': createdAt.toIso8601String(),
     };
-  }
-
-  factory Item.fromJson(Map<String, dynamic> json) {
-    return Item(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
-      barcode: json['barcode'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-    );
   }
 
   @override

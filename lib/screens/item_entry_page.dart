@@ -11,11 +11,13 @@ class ItemEntryPage extends StatefulWidget {
 
 class _ItemEntryPageState extends State<ItemEntryPage> {
   final ItemService _itemService = ItemService.instance;
+  final TextEditingController _barcodeController = TextEditingController();
   final TextEditingController _itemNameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
 
   @override
   void dispose() {
+    _barcodeController.dispose();
     _itemNameController.dispose();
     _priceController.dispose();
     super.dispose();
@@ -45,7 +47,7 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                         ),
                         const SizedBox(width: 16),
                         const Text(
-                          'Item Entry',
+                          'Product Entry',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -63,8 +65,8 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                           final result =
                               await Navigator.pushNamed(context, '/qr-scanner');
                           if (result != null) {
-                            // Auto-fill the item name field with scanned data
-                            _itemNameController.text = result as String;
+                            // Auto-fill the barcode field with scanned data
+                            _barcodeController.text = result as String;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Scanned: $result'),
@@ -95,6 +97,31 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    TextField(
+                      controller: _barcodeController,
+                      decoration: InputDecoration(
+                        labelText: 'Barcode',
+                        hintText: 'Enter or scan barcode',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              BorderSide(color: Colors.green[600]!, width: 2),
+                        ),
+                        prefixIcon:
+                            Icon(Icons.qr_code, color: Colors.grey[600]),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     TextField(
                       controller: _itemNameController,
                       decoration: InputDecoration(
@@ -151,7 +178,8 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                       child: ElevatedButton(
                         onPressed: () async {
                           // Submit functionality
-                          if (_itemNameController.text.isNotEmpty &&
+                          if (_barcodeController.text.isNotEmpty &&
+                              _itemNameController.text.isNotEmpty &&
                               _priceController.text.isNotEmpty) {
                             try {
                               final price =
@@ -166,12 +194,26 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                                 return;
                               }
 
+                              // Check if barcode already exists
+                              if (_itemService.hasItemWithBarcode(
+                                  _barcodeController.text.trim())) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Product with this barcode already exists'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
                               final item = Item(
                                 id: DateTime.now()
                                     .millisecondsSinceEpoch
                                     .toString(),
                                 name: _itemNameController.text.trim(),
                                 price: price,
+                                barcode: _barcodeController.text.trim(),
                               );
 
                               await _itemService.addItem(item);
@@ -179,7 +221,7 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Added: ${_itemNameController.text} - ₹${_priceController.text}',
+                                    'Product Added: ${_itemNameController.text} - ₹${_priceController.text}',
                                   ),
                                   backgroundColor: Colors.green[600],
                                   behavior: SnackBarBehavior.floating,
@@ -188,16 +230,24 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                                   ),
                                 ),
                               );
+                              _barcodeController.clear();
                               _itemNameController.clear();
                               _priceController.clear();
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Failed to add item: $e'),
+                                  content: Text('Failed to add product: $e'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
                             }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please fill all fields'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -210,7 +260,7 @@ class _ItemEntryPageState extends State<ItemEntryPage> {
                           elevation: 2,
                         ),
                         child: const Text(
-                          'Submit',
+                          'Add Product',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
