@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/item.dart';
+import '../models/billing_item.dart';
 
 class SessionService {
   static SessionService? _instance;
@@ -10,7 +10,7 @@ class SessionService {
 
   static const String _sessionKey = 'billing_session';
 
-  Future<void> saveSession(List<Item> billingItems) async {
+  Future<void> saveSession(List<BillingItem> billingItems) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final itemsJson =
@@ -21,7 +21,7 @@ class SessionService {
     }
   }
 
-  Future<List<Item>> loadSession() async {
+  Future<List<BillingItem>> loadSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final itemsJson = prefs.getStringList(_sessionKey) ?? [];
@@ -32,13 +32,7 @@ class SessionService {
 
       return itemsJson.map((json) {
         final Map<String, dynamic> itemMap = jsonDecode(json);
-        return Item(
-          id: itemMap['id'] as String,
-          name: itemMap['name'] as String,
-          price: (itemMap['price'] as num).toDouble(),
-          barcode: itemMap['barcode'] as String,
-          createdAt: DateTime.parse(itemMap['createdAt'] as String),
-        );
+        return BillingItem.fromJson(itemMap);
       }).toList();
     } catch (e) {
       return [];

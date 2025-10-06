@@ -1,44 +1,359 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../models/item.dart';
-import '../services/item_service.dart';
+import '../controllers/catalog_controller.dart';
+import '../theme/app_theme.dart';
 
-class CatalogManagementPage extends StatefulWidget {
+class CatalogManagementPage extends StatelessWidget {
   const CatalogManagementPage({super.key});
 
   @override
-  State<CatalogManagementPage> createState() => _CatalogManagementPageState();
-}
+  Widget build(BuildContext context) {
+    // Initialize the controller
+    final CatalogController controller = Get.put(CatalogController());
 
-class _CatalogManagementPageState extends State<CatalogManagementPage> {
-  final ItemService _itemService = ItemService.instance;
-  List<Item> _catalogItems = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCatalogItems();
-  }
-
-  Future<void> _loadCatalogItems() async {
-    setState(() => _isLoading = true);
-    try {
-      setState(() {
-        _catalogItems = _itemService.items;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load catalog: $e'),
-          backgroundColor: Colors.red,
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.backgroundColor,
+            ],
+            stops: [0.0, 0.3],
+          ),
         ),
-      );
-    }
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Product Catalog',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          Text(
+                            'Manage your product inventory',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/item-entry'),
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content Section
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        // Add Product Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: GradientButton(
+                            text: 'ADD NEW PRODUCT',
+                            icon: Icons.add_circle_outline,
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/item-entry'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Products Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Products',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            Obx(() {
+                              if (controller.catalogItems.isNotEmpty) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    '${controller.catalogItems.length} products',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppTheme.primaryColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            }),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Products List
+                        Expanded(
+                          child: Obx(() {
+                            if (controller.isLoading.value) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+
+                            if (controller.errorMessage.value.isNotEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 64,
+                                      color:
+                                          AppTheme.errorColor.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      controller.errorMessage.value,
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color: AppTheme.errorColor,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            if (controller.catalogItems.isEmpty) {
+                              return _buildEmptyState(context);
+                            }
+
+                            return _buildProductsList(context, controller);
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  void _showEditDialog(Item item) {
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(60),
+            ),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 60,
+              color: AppTheme.primaryColor.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No products yet',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap "ADD NEW PRODUCT" to get started',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textHint,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductsList(
+      BuildContext context, CatalogController controller) {
+    return ListView.builder(
+      itemCount: controller.catalogItems.length,
+      itemBuilder: (context, index) {
+        final item = controller.catalogItems[index];
+        return AnimatedCard(
+          margin: const EdgeInsets.only(bottom: 12),
+          onTap: () => _showEditDialog(context, controller, item),
+          child: Row(
+            children: [
+              // Product Icon
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.inventory_2,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Product Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Barcode: ${item.barcode}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹${item.price.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.successColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      onPressed: () =>
+                          _showEditDialog(context, controller, item),
+                      icon: Icon(Icons.edit,
+                          color: AppTheme.secondaryColor, size: 20),
+                      padding: const EdgeInsets.all(8),
+                      constraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      onPressed: () =>
+                          _showDeleteDialog(context, controller, item),
+                      icon: Icon(Icons.delete_outline,
+                          color: AppTheme.errorColor, size: 20),
+                      padding: const EdgeInsets.all(8),
+                      constraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditDialog(
+      BuildContext context, CatalogController controller, Item item) {
     final TextEditingController nameController =
         TextEditingController(text: item.name);
     final TextEditingController priceController =
@@ -50,81 +365,25 @@ class _CatalogManagementPageState extends State<CatalogManagementPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Product'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    // Navigate to QR Scanner
-                    final result =
-                        await Navigator.pushNamed(context, '/qr-scanner');
-                    if (result != null) {
-                      barcodeController.text = result as String;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Scanned: $result'),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.qr_code_scanner, size: 20),
-                  label: const Text(
-                    'SCAN BARCODE',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: barcodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Barcode',
-                  hintText: 'Enter or scan barcode',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.qr_code),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Name',
-                  hintText: 'Enter item name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.shopping_cart),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: priceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Price',
-                  hintText: '0.00',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.currency_rupee),
-                ),
-              ),
-            ],
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Product Name'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: priceController,
+              decoration: const InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: barcodeController,
+              decoration: const InputDecoration(labelText: 'Barcode'),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -134,68 +393,15 @@ class _CatalogManagementPageState extends State<CatalogManagementPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isNotEmpty &&
-                  priceController.text.isNotEmpty &&
-                  barcodeController.text.isNotEmpty) {
-                final price = double.tryParse(priceController.text.trim());
-                if (price != null && price > 0) {
-                  try {
-                    // Check if barcode already exists (excluding current item)
-                    if (_itemService.hasItemWithBarcode(
-                            barcodeController.text.trim()) &&
-                        barcodeController.text.trim() != item.barcode) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Barcode already exists for another product'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Update the item
-                    final updatedItem = Item(
-                      id: item.id,
-                      name: nameController.text.trim(),
-                      price: price,
-                      barcode: barcodeController.text.trim(),
-                      createdAt: item.createdAt,
-                    );
-
-                    await _itemService.deleteItem(item.id);
-                    await _itemService.addItem(updatedItem);
-                    await _loadCatalogItems();
-
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Updated: ${updatedItem.name}'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to update product: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid price'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill all fields'),
-                    backgroundColor: Colors.red,
-                  ),
+                  priceController.text.isNotEmpty) {
+                final updatedItem = item.copyWith(
+                  name: nameController.text,
+                  price: double.tryParse(priceController.text) ?? item.price,
+                  barcode: barcodeController.text,
                 );
+
+                await controller.updateItem(updatedItem);
+                Navigator.pop(context);
               }
             },
             child: const Text('Update'),
@@ -205,7 +411,8 @@ class _CatalogManagementPageState extends State<CatalogManagementPage> {
     );
   }
 
-  void _showDeleteDialog(Item item) {
+  void _showDeleteDialog(
+      BuildContext context, CatalogController controller, Item item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -218,211 +425,14 @@ class _CatalogManagementPageState extends State<CatalogManagementPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              try {
-                await _itemService.deleteItem(item.id);
-                await _loadCatalogItems();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Deleted: ${item.name}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to delete product: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
+              await controller.deleteItem(item.id);
+              Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red[600],
-              foregroundColor: Colors.white,
-            ),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
             child: const Text('Delete'),
           ),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back, size: 24),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 16),
-                        const Text(
-                          'Catalog Management',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'PRODUCTS (${_catalogItems.length})',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/item-entry');
-                          },
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add Product'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[600],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : _catalogItems.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    'No products in catalog yet.\nTap "Add Product" to get started.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: _catalogItems.length,
-                                  itemBuilder: (context, index) {
-                                    final item = _catalogItems[index];
-                                    return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 12),
-                                      child: Card(
-                                        elevation: 2,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      item.name,
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.black87,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      'Barcode: ${item.barcode}',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      '₹${item.price.toStringAsFixed(2)}',
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color:
-                                                            Colors.green[700],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Row(
-                                                children: [
-                                                  IconButton(
-                                                    onPressed: () =>
-                                                        _showEditDialog(item),
-                                                    icon: Icon(
-                                                      Icons.edit,
-                                                      color: Colors.blue[600],
-                                                      size: 20,
-                                                    ),
-                                                    padding: EdgeInsets.zero,
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  IconButton(
-                                                    onPressed: () =>
-                                                        _showDeleteDialog(item),
-                                                    icon: Icon(
-                                                      Icons.delete,
-                                                      color: Colors.red[600],
-                                                      size: 20,
-                                                    ),
-                                                    padding: EdgeInsets.zero,
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
